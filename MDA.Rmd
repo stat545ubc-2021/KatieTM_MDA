@@ -3,8 +3,9 @@ title: "Mini data analysis"
 date: "October 10, 2021"
 author: "Katie Tjaden-McClement"
 output: 
-  html_document:
-    toc_float: true
+  github_document:
+  toc: true
+  toc_depth: 3
 ---
 
 ### Introduction
@@ -14,6 +15,9 @@ This is the R markdown document for the mini data analysis project. The first mi
 ```{r setup, include=FALSE} 
 library(datateachr)
 library(tidyverse)
+library(naniar)
+
+theme_set(theme_classic()) #sets theme for all plots as classic, removing backgrounds and gridlines
 ```
 
 ## **Task 1**
@@ -41,9 +45,10 @@ After getting a better sense of the different datasets, I am most interested in 
 
 Looking at a more detailed breakdown of these final 2 datasets using the _summary_ function provides more information about the distribution of numeric variables, as well as revealing more clearly that some variables are currently mis-classed in the case of the _vancouver_trees_ dataset (e.g. root_barrier should be a factor not a character).
 
-```{r} 
+```{r, results='hide'} 
 summary(vancouver_trees)
 summary(cancer_sample)
+# results are hidden for conciseness
 ```
 
 ### 1.4 Potential research questions
@@ -51,4 +56,94 @@ Research questions I would be interested in exploring with my final 2 candidate 
 
 * _vancouver_trees_: Does the presence of a root barrier affect the size of trees, as reflected by the height range and diameter?
 * _cancer_sample_: Is the diagnosis of malignant or benign predicted by the sample's area, level of smoothness, and/or level of compactness?
+
+**Final Choice**: I am choosing the _vancouver_trees_ dataset for my mini data analysis because I am most interested in the potential research questions it will allow me to explore.
+
+
+## **Task 2**
+
+Before diving into exploring the _vancouver_trees_ dataset I read through the [dataset documentation](https://opendata.vancouver.ca/explore/dataset/street-trees/information/?disjunctive.species_name&disjunctive.common_name&disjunctive.height_range_id) to get a clearer understanding of what the different variable are and how the data was collected.
+
+I will also load the dataset into my R environment, renaming it to the more concise name "trees" and change the class of the root_barrier variable to a factor as noted above.
+```{r} 
+trees <- vancouver_trees
+
+trees$root_barrier <- as.factor(trees$root_barrier)
+```
+
+### Excersise 1: Visualize missing values
+Knowing how many missing values there are throughout the dataset is important. The [nanier](https://github.com/njtierney/naniar) package was designed to easily count and visualize missing values. The function _gg_miss_var_ plots the number of missing values across all variables in a dataset:
+```{r missing_values}
+gg_miss_var(trees)
+```
+
+The trees dataset isn't missing any data for the variables of interest I initially identified: root_barrier, diameter, and height_range_id, but is missing significant numbers of data on the date the trees were planted, the cultivar, and geographic information (lat and long) to a lesser extent.
+
+### Excersise 2: Distribution of tree size metrics
+Diameter and tree height are the numeric variables i am interested in using to answer my initial research question, so I am plotting their distributions using histograms.
+
+* diameter:
+```{r diameter_histogram}
+ggplot(trees, aes(x = diameter)) +
+  geom_histogram(bins = 45) 
+```
+
+The diameters of trees in this dataset right-skewed, with a very long tail to the right as visible in the above histogram. Many models will assume that data is normally distributed, so this could be an issue when trying to answer research questions that involve diameter.
+
+* height:
+```{r height_histogram}
+ggplot(trees, aes(x = height_range_id)) +
+  geom_histogram(bins = 45) 
+```
+
+Height is also right-skewed, though to a lesser extent than diameter.
+
+## Excersie 3: Log-transforming size metrics
+Creating new variables in the trees dataset of log transformed diameter and height may solve the problems of the right-skew we found above. Let's use mutate to create new columns that are the log of diameter and height and check out their distributions using histograms again.
+
+```{r log_diameter_histogram, warning=FALSE}
+trees <- trees %>% 
+  mutate(log_diameter = log(diameter),
+         log_height = log(height_range_id))
+
+ggplot(trees, aes(log_diameter)) + 
+  geom_histogram(bins = 45)
+```
+
+The distribution of log_diameter is no longer right skewed, but the variable is still not normally distributed, with a massive peak at around 1.
+
+```{r log_height_histogram, warning=FALSE}
+ggplot(trees, aes(log_height)) + 
+  geom_histogram(bins = 45)
+```
+
+The distribution of log_hieght is still right-skewed, so log-transforming height_range_id was not effective in creating a more normal distribution for height.
+
+### Excercise 4: Relationship between root_barrier and diameter
+I am interested in evaluating the presence of root barriers to predict tree size, so I first want to look into the frequency of root barriers in the dataset. Is there a large enough sample of trees with and without root barriers to ask questions about their effect?
+
+```{r} 
+summary(trees$root_barrier)
+```
+There are almost 10,000 trees with root barriers, which is a large enough sample size to continue with investigations of their effects.
+
+Using the log_diameter variable I created in the previous step (because it is more normally distributed than the original diameter variable) I want to visualize the relationship between root barriers and tree diameter using a boxplot:
+```{r barrier_diameter_boxplot, warning=FALSE}
+ggplot(trees, aes(x = root_barrier, y = log_diameter)) + 
+  geom_boxplot()
+```
+This exploratory plot of the relationship between root barriers and log diameter shows that trees without root barriers tend to have a longer diameter.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
