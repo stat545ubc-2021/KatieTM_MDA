@@ -1,0 +1,54 @@
+---
+title: "Mini data analysis"
+date: "October 10, 2021"
+author: "Katie Tjaden-McClement"
+output: 
+  html_document:
+    toc_float: true
+---
+
+### Introduction
+
+This is the R markdown document for the mini data analysis project. The first milestone of this project for STAT 545 aims to build familiarity with the R tidyverse for data tidying, visualization, and developing research questions. The datasets explored for this analysis come from the _datateachr_ package. Data exploration and visualization will be conducted primarily using packages within the _tidyverse_ and include _dplyr_ functions and _ggplot2_.
+
+```{r setup, include=FALSE} 
+library(datateachr)
+library(tidyverse)
+```
+
+## **Task 1**
+
+### 1.1 Initial Dataset Selection
+The following 4 datasets were most interesting to me based on their brief descriptions:
+
+1. vancouver_trees
+2. cancer_sample
+3. flow_sample
+4. steam_games
+
+### 1.2 Dataset Exploration
+Initial exploration of the above 4 datasets can be done using the tidy function _glimpse_ to display the numbers of rows and columns, column names and classes, and the first rows of data
+
+```{r} 
+glimpse(vancouver_trees)
+glimpse(cancer_sample)
+glimpse(flow_sample)
+glimpse(steam_games)
+```
+
+### 1.3 Narrowing down dataset choice
+After getting a better sense of the different datasets, I am most interested in continuing to explore the _vancouver_trees_ and _cancer_sample_ datasets. These daatsets were most interesting to me initially based on their subject matter, since I am a biology student and both these daatsets relate to biology. Additionally, I am starting to form several ideas about potential research questions to address using these datasets after viewing the column names and data types available. I am not as excited about _flow_sample_ and _steam_games_ because they align less with my interests generally and contain few numerical variables of interest to me.
+
+Looking at a more detailed breakdown of these final 2 datasets using the _summary_ function provides more information about the distribution of numeric variables, as well as revealing more clearly that some variables are currently mis-classed in the case of the _vancouver_trees_ dataset (e.g. root_barrier should be a factor not a character).
+
+```{r} 
+summary(vancouver_trees)
+summary(cancer_sample)
+```
+
+### 1.4 Potential research questions
+Research questions I would be interested in exploring with my final 2 candidate datasets are:
+
+* _vancouver_trees_: Does the presence of a root barrier affect the size of trees, as reflected by the height range and diameter?
+* _cancer_sample_: Is the diagnosis of malignant or benign predicted by the sample's area, level of smoothness, and/or level of compactness?
+
