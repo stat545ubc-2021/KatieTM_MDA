@@ -1,7 +1,26 @@
 Mini data analysis
 ================
 Katie Tjaden-McClement
-October 10, 2021
+October 12, 2021
+
+-   [Introduction](#introduction)
+-   [**Task 1**](#task-1)
+    -   [1.1 Initial Dataset Selection](#11-initial-dataset-selection)
+    -   [1.2 Dataset Exploration](#12-dataset-exploration)
+    -   [1.3 Narrowing down dataset
+        choice](#13-narrowing-down-dataset-choice)
+    -   [1.4 Potential research
+        questions](#14-potential-research-questions)
+-   [**Task 2**](#task-2)
+    -   [Excercise 1: Visualize missing
+        values](#excercise-1-visualize-missing-values)
+    -   [Excercise 2: Distribution of tree size
+        metrics](#excercise-2-distribution-of-tree-size-metrics)
+    -   [Excercise 3: Log-transforming size
+        metrics](#excercise-3-log-transforming-size-metrics)
+    -   [Excercise 4: Relationship between root\_barrier and
+        diameter](#excercise-4-relationship-between-root_barrier-and-diameter)
+-   [**Task 3**](#task-3)
 
 ### Introduction
 
@@ -184,7 +203,7 @@ research questions it will allow me to explore.
 Before diving into exploring the *vancouver\_trees* dataset I read
 through the [dataset
 documentation](https://opendata.vancouver.ca/explore/dataset/street-trees/information/?disjunctive.species_name&disjunctive.common_name&disjunctive.height_range_id)
-to get a clearer understanding of what the different variable are and
+to get a clearer understanding of what the different variables are and
 how the data was collected.
 
 I will also load the dataset into my R environment, renaming it to the
@@ -197,7 +216,7 @@ trees <- vancouver_trees
 trees$root_barrier <- as.factor(trees$root_barrier)
 ```
 
-### Excersise 1: Visualize missing values
+### Excercise 1: Visualize missing values
 
 Knowing how many missing values there are throughout the dataset is
 important. The [nanier](https://github.com/njtierney/naniar) package was
@@ -217,38 +236,67 @@ but is missing significant numbers of data on the date the trees were
 planted, the cultivar, and geographic information (lat and long) to a
 lesser extent.
 
-### Excersise 2: Distribution of tree size metrics
+### Excercise 2: Distribution of tree size metrics
 
-Diameter and tree height are the numeric variables i am interested in
+Diameter and tree height are the numeric variables I am interested in
 using to answer my initial research question, so I am plotting their
-distributions using histograms.
+distributions.
 
 -   diameter:
 
 ``` r
 ggplot(trees, aes(x = diameter)) +
-  geom_histogram(bins = 45) 
+  geom_density() 
 ```
 
-![](MDA_files/figure-gfm/diameter_histogram-1.png)<!-- -->
+![](MDA_files/figure-gfm/diameter_density-1.png)<!-- -->
 
 The diameters of trees in this dataset right-skewed, with a very long
-tail to the right as visible in the above histogram. Many models will
+tail to the right as visible in the above density plot. Many models will
 assume that data is normally distributed, so this could be an issue when
 trying to answer research questions that involve diameter.
+
+Based on the extremity of the largest outliers in diameter, I am going
+to trim this dataset to include only trees with diameters less than 75
+inches. This only removes 35 of almost 150,000 total trees in the
+dataset and should avoid any of these outliers having a disproportionate
+impact in future modelling.
+
+``` r
+trees_trimmed <- filter(trees, diameter <= 75)
+nrow(trees) - nrow(trees_trimmed) # 35 trees trimmed from dataset
+```
+
+    ## [1] 35
+
+``` r
+ggplot(trees_trimmed, aes(x = diameter)) +
+  geom_density() # reduces severity of right-skew
+```
+
+![](MDA_files/figure-gfm/trimming%20trees-1.png)<!-- -->
+
+``` r
+trees <- trees_trimmed # saving as "trees" again to shorten object name going forward
+```
 
 -   height:
 
 ``` r
 ggplot(trees, aes(x = height_range_id)) +
-  geom_histogram(bins = 45) 
+  geom_histogram(bins = 25)
 ```
 
 ![](MDA_files/figure-gfm/height_histogram-1.png)<!-- -->
 
 Height is also right-skewed, though to a lesser extent than diameter.
+Because the hieght data is already binned into 10 height range
+categories, with the final catergory being trees 100+ meters tall, any
+outliners in height are already accounted for in this grouping, and so
+won’t have a detrimental effect when using height to answer research
+questions.
 
-## Excersie 3: Log-transforming size metrics
+### Excercise 3: Log-transforming size metrics
 
 Creating new variables in the trees dataset of log transformed diameter
 and height may solve the problems of the right-skew we found above.
@@ -293,7 +341,7 @@ summary(trees$root_barrier)
 ```
 
     ##      N      Y 
-    ## 137455   9156
+    ## 137422   9154
 
 There are almost 10,000 trees with root barriers, which is a large
 enough sample size to continue with investigations of their effects.
@@ -301,11 +349,61 @@ enough sample size to continue with investigations of their effects.
 Using the log\_diameter variable I created in the previous step (because
 it is more normally distributed than the original diameter variable) I
 want to visualize the relationship between root barriers and tree
-diameter using a boxplot:
+diameter using a density plot:
 
 ``` r
-ggplot(trees, aes(x = root_barrier, y = log_diameter)) + 
-  geom_boxplot()
+ggplot(trees, aes(x = log_diameter)) + 
+  geom_density(aes(fill = root_barrier), alpha = 0.5)
 ```
 
-![](MDA_files/figure-gfm/barrier_diameter_boxplot-1.png)<!-- -->
+![](MDA_files/figure-gfm/barrier_diameter_density-1.png)<!-- -->
+
+This exploratory plot of the relationship between root barriers and log
+diameter shows that trees without root barriers tend to have a longer
+diameter.
+
+## **Task 3**
+
+Research questions to answer with the *vancouver\_trees* data:
+
+1.  How does having a root barrier relate to tree size as measured by
+    diameter and height?
+    -   This was my initial question after glimpsing the dataset, and
+        after the exploration above I think this is an intriguing
+        question to continue to explore.
+2.  How does tree biomass (measured as a combination of number of trees
+    and their size) vary across neighbourhoods?
+    -   In walking around Vancouver, there seem to be some
+        neighbourhoods with many large, old trees while some other
+        neighbourhoods seem to have only few and/or very small trees. I
+        would like to see if this observation holds up in the data, and
+        which neighbourhoods have the most trees.
+3.  What is the spatial distribution of cherry trees in Vancouver?
+    -   Since this dataset contains latitude and longitude information
+        for (most of) the trees, I would love to take advantage of this
+        to dive into some R Spatial work, with the added benefit of
+        finding out where the highest concentrations of cherry trees are
+        in the city for prime springtime cherry blossom viewing.
+    -   The following code chunk subsets the trees dataset to just
+        cherry trees (based on having the word “cherry” in the common
+        name) - there are 40 different species fo cherry trees in this
+        dataset!
+
+    ``` r
+    cherry_trees <- trees %>% 
+      filter(grepl("CHERRY", common_name))
+
+    length(unique(cherry_trees$common_name))
+    ```
+
+        ## [1] 40
+4.  What is the relationship between plant\_area (whether the tree is in
+    a sidewalk cutout, gate, behind sidewalk, or in boulevards or
+    varying widths) and tree size as measured by diameter and height?
+    -   I am interested in knowing whether trees in grates or cutouts,
+        for example, tend to be smaller than those on boulevards, and
+        within trees on boulevards if they tend to increase in size with
+        increasing boulevard width. In a dressing this question it would
+        also be interesting to explore whether certain plant\_area
+        categories are more likely to have root barriers in place,
+        relating back to question 1.
