@@ -1,0 +1,183 @@
+---
+title: "Mini data analysis"
+date: "October 12, 2021"
+author: "Katie Tjaden-McClement"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+### Introduction
+
+This is the R markdown document for the mini data analysis project. The first milestone of this project for STAT 545 aims to build familiarity with the R tidyverse for data tidying, visualization, and developing research questions. The datasets explored for this analysis come from the _datateachr_ package. Data exploration and visualization will be conducted primarily using packages within the _tidyverse_ and include _dplyr_ functions and _ggplot2_.
+
+```{r setup, include=FALSE} 
+library(datateachr)
+library(tidyverse)
+library(naniar)
+
+theme_set(theme_classic()) #sets theme for all plots as classic, removing backgrounds and gridlines
+```
+
+## **Task 1**
+
+### 1.1 Initial Dataset Selection
+The following 4 datasets were most interesting to me based on their brief descriptions:
+
+1. vancouver_trees
+2. cancer_sample
+3. flow_sample
+4. steam_games
+
+### 1.2 Dataset Exploration
+Initial exploration of the above 4 datasets can be done using the tidy function _glimpse_ to display the numbers of rows and columns, column names and classes, and the first rows of data
+
+```{r} 
+glimpse(vancouver_trees)
+glimpse(cancer_sample)
+glimpse(flow_sample)
+glimpse(steam_games)
+```
+
+### 1.3 Narrowing down dataset choice
+After getting a better sense of the different datasets, I am most interested in continuing to explore the _vancouver_trees_ and _cancer_sample_ datasets. These daatsets were most interesting to me initially based on their subject matter, since I am a biology student and both these daatsets relate to biology. Additionally, I am starting to form several ideas about potential research questions to address using these datasets after viewing the column names and data types available. I am not as excited about _flow_sample_ and _steam_games_ because they align less with my interests generally and contain few numerical variables of interest to me.
+
+Looking at a more detailed breakdown of these final 2 datasets using the _summary_ function provides more information about the distribution of numeric variables, as well as revealing more clearly that some variables are currently mis-classed in the case of the _vancouver_trees_ dataset (e.g. root_barrier should be a factor not a character).
+
+```{r, results='hide'} 
+summary(vancouver_trees)
+summary(cancer_sample)
+# results are hidden for conciseness
+```
+
+### 1.4 Potential research questions
+Research questions I would be interested in exploring with my final 2 candidate datasets are:
+
+* _vancouver_trees_: Does the presence of a root barrier affect the size of trees, as reflected by the height range and diameter?
+* _cancer_sample_: Is the diagnosis of malignant or benign predicted by the sample's area, level of smoothness, and/or level of compactness?
+
+**Final Choice**: I am choosing the _vancouver_trees_ dataset for my mini data analysis because I am most interested in the potential research questions it will allow me to explore.
+
+
+## **Task 2**
+
+Before diving into exploring the _vancouver_trees_ dataset I read through the [dataset documentation](https://opendata.vancouver.ca/explore/dataset/street-trees/information/?disjunctive.species_name&disjunctive.common_name&disjunctive.height_range_id) to get a clearer understanding of what the different variables are and how the data was collected.
+
+I will also load the dataset into my R environment, renaming it to the more concise name "trees" and change the class of the root_barrier variable to a factor as noted above.
+```{r} 
+trees <- vancouver_trees
+
+trees$root_barrier <- as.factor(trees$root_barrier)
+```
+
+### Excercise 1: Visualize missing values
+Knowing how many missing values there are throughout the dataset is important. The [nanier](https://github.com/njtierney/naniar) package was designed to easily count and visualize missing values. The function _gg_miss_var_ plots the number of missing values across all variables in a dataset:
+```{r missing_values}
+gg_miss_var(trees)
+```
+
+The trees dataset isn't missing any data for the variables of interest I initially identified: root_barrier, diameter, and height_range_id, but is missing significant numbers of data on the date the trees were planted, the cultivar, and geographic information (lat and long) to a lesser extent.
+
+### Excercise 2: Distribution of tree size metrics
+Diameter and tree height are the numeric variables I am interested in using to answer my initial research question, so I am plotting their distributions.
+
+* diameter:
+```{r diameter_density}
+ggplot(trees, aes(x = diameter)) +
+  geom_density() 
+```
+
+The diameters of trees in this dataset right-skewed, with a very long tail to the right as visible in the above density plot. Many models will assume that data is normally distributed, so this could be an issue when trying to answer research questions that involve diameter.
+
+Based on the extremity of the largest outliers in diameter, I am going to trim this dataset to include only trees with diameters less than 75 inches. This only removes 35 of almost 150,000 total trees in the dataset and should avoid any of these outliers having a disproportionate impact in future modelling.
+
+```{r trimming trees}
+trees_trimmed <- filter(trees, diameter <= 75)
+nrow(trees) - nrow(trees_trimmed) # 35 trees trimmed from dataset
+
+ggplot(trees_trimmed, aes(x = diameter)) +
+  geom_density() # reduces severity of right-skew
+
+trees <- trees_trimmed # saving as "trees" again to shorten object name going forward
+```
+
+
+* height:
+```{r height_histogram}
+ggplot(trees, aes(x = height_range_id)) +
+  geom_histogram(bins = 25)
+```
+
+Height is also right-skewed, though to a lesser extent than diameter. Because the hieght data is already binned into 10 height range categories, with the final catergory being trees 100+ meters tall, any outliners in height are already accounted for in this grouping, and so won't have a detrimental effect when using height to answer research questions.
+
+
+### Excercise 3: Log-transforming size metrics
+Creating new variables in the trees dataset of log transformed diameter and height may solve the problems of the right-skew we found above. Let's use mutate to create new columns that are the log of diameter and height and check out their distributions using histograms again.
+
+```{r log_diameter_histogram, warning=FALSE}
+trees <- trees %>% 
+  mutate(log_diameter = log(diameter),
+         log_height = log(height_range_id))
+
+ggplot(trees, aes(log_diameter)) + 
+  geom_histogram(bins = 45)
+```
+
+The distribution of log_diameter is no longer right skewed, but the variable is still not normally distributed, with a massive peak at around 1.
+
+```{r log_height_histogram, warning=FALSE}
+ggplot(trees, aes(log_height)) + 
+  geom_histogram(bins = 45)
+```
+
+The distribution of log_hieght is still right-skewed, so log-transforming height_range_id was not effective in creating a more normal distribution for height.
+
+### Excercise 4: Relationship between root_barrier and diameter
+I am interested in evaluating the presence of root barriers to predict tree size, so I first want to look into the frequency of root barriers in the dataset. Is there a large enough sample of trees with and without root barriers to ask questions about their effect?
+
+```{r} 
+summary(trees$root_barrier)
+```
+There are almost 10,000 trees with root barriers, which is a large enough sample size to continue with investigations of their effects.
+
+Using the log_diameter variable I created in the previous step (because it is more normally distributed than the original diameter variable) I want to visualize the relationship between root barriers and tree diameter using a density plot:
+```{r barrier_diameter_density, warning=FALSE}
+ggplot(trees, aes(x = log_diameter)) + 
+  geom_density(aes(fill = root_barrier), alpha = 0.5)
+```
+
+This exploratory plot of the relationship between root barriers and log diameter shows that trees without root barriers tend to have a longer diameter.
+
+
+## **Task 3**
+
+Research questions to answer with the _vancouver_trees_ data:
+
+1. How does having a root barrier relate to tree size as measured by diameter and height?
+    - This was my initial question after glimpsing the dataset, and after the exploration above     I think this is an intriguing question to continue to explore.
+
+2. How does tree biomass (measured as a combination of number of trees and their size) vary across neighbourhoods?
+    - In walking around Vancouver, there seem to be some neighbourhoods with many large, old        trees while some other neighbourhoods seem to have only few and/or very small trees. I would     like to see if this observation holds up in the data, and which neighbourhoods have the most     trees.
+
+3. What is the spatial distribution of cherry trees in Vancouver?
+    - Since this dataset contains latitude and longitude information for (most of) the trees, I     would love to take advantage of this to dive into some R Spatial work, with the added           benefit of finding out where the highest concentrations of cherry trees are in the city for     prime springtime cherry blossom viewing. 
+    - The following code chunk subsets the trees dataset to just cherry trees (based on having      the word "cherry" in the common name) - there are 40 different species fo cherry trees in       this dataset!
+    
+
+   ```{r}
+   cherry_trees <- trees %>% 
+     filter(grepl("CHERRY", common_name))
+
+   length(unique(cherry_trees$common_name))
+   ```
+
+4. What is the relationship between plant_area (whether the tree is in a sidewalk cutout, gate, behind sidewalk, or in boulevards or varying widths) and tree size as measured by diameter and height?
+    - I am interested in knowing whether trees in grates or cutouts, for example, tend to be        smaller than those on boulevards, and within trees on boulevards if they tend to increase      in size with increasing boulevard width. In a dressing this question it would also be           interesting to explore whether certain plant_area categories are more likely to have root       barriers in place, relating back to question 1.
+
+
+
+
+
+
+
