@@ -1,0 +1,116 @@
+---
+title: "Mini Data Analysis: Milestone 2"
+date: "October 19, 2021"
+author: "Katie Tjaden-McClement"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+### Introduction
+
+This is the R markdown document for milestone 2 of the mini data analysis project for STAT 545A. This milestone of the project builds on the work done in the first milestone (_MDA_m1.Rmd_) to gain experience working with _dplyr_ and _tidyr_ to handle datasets and adress research questions. This milestone focuses on the principle of tidy data and how datasets can be converted to tidy formats for a given research question.
+
+In Milestone 1 I chose the _vancouver_trees_ dataset from the _datateachr_ package to work with for the Mini Data Analysis, and explored it through various visualizations.
+
+```{r setup, include=FALSE} 
+library(datateachr)
+library(tidyverse)
+
+theme_set(theme_classic()) #sets theme for all plots as classic, removing backgrounds and gridlines
+```
+
+## **Task 1**
+
+### 1.1 Research Questions
+
+These are the 4 research questions I proposed for the _vancouver_trees_ dataset in milestone 1:
+
+1. How does having a root barrier relate to tree size as measured by diameter and height?
+2. How does tree biomass (measured as a combination of number of trees and their size) vary across neighbourhoods?
+3. What is the spatial distribution of cherry trees in Vancouver?
+4. What is the relationship between plant_area (whether the tree is in a sidewalk cutout, gate, behind sidewalk, or in boulevards or varying widths) and tree size as measured by diameter and height?
+
+Before getting into processing and summarizing my data, I will load it into my R environment using the more concise name "trees". I will also trim outliers for diameter as discuessed in milestone 1.
+```{r} 
+trees <- vancouver_trees
+trees <- filter(trees, diameter <= 75)
+```
+
+### 1.2 - Research Question 1
+
+To summarize the data for question 1, I will compute the range, mean, median, and standard deviation of tree diameter for trees with and without root barriers
+
+```{r}
+q1_summary <- trees %>% 
+  group_by(root_barrier) %>% 
+  summarise(mean = mean(diameter, na.rm = T),
+            range_lower = min(diameter),
+            range_upper = max(diameter),
+            median = median(diameter, na.rm = T),
+            sd = sd(diameter),
+            n = n())
+q1_summary
+```
+
+Hmmmm we can see from the minimum that there are trees with a diameter of 0, which can't be right. Let's see how many there are and remove them from the dataset
+
+```{r}
+diameter0 <- filter(trees, diameter == 0)
+nrow(diameter0) # there are 92!
+
+trees <- filter(trees, diameter != 0)
+```
+
+Now lets repeat the summary statistics:
+```{r}
+q1_summary <- trees %>% 
+  group_by(root_barrier) %>% 
+  summarise(mean = mean(diameter, na.rm = T),
+            range_lower = min(diameter),
+            range_upper = max(diameter),
+            median = median(diameter, na.rm = T),
+            sd = sd(diameter),
+            n = n())
+q1_summary
+```
+Let's visualize these differences in diameter between trees with and without root barriers using a boxplot overlayed with density plots to get a better sense of the full spread of the data
+
+```{r diameter_barrier_boxplot_density}
+ggplot(trees) +
+  geom_density(aes(x = diameter, fill = root_barrier), 
+              alpha = 0.4) +
+  geom_boxplot(aes(x = diameter, y = root_barrier, fill = root_barrier), 
+               width = 0.5, alpha = 0.9) +
+  scale_x_log10() + # changes the x axis to a logarithmic scale which more clearly shows the distribution
+  scale_fill_brewer(palette = "Set1") + # specifies a colour palette from the rcolourbrewer package (in tidyverse)
+  labs(x = "Tree diameter",
+       fill = "Root barrier",
+       y = "") + # removes y axis label because it is redundant to fill label
+  theme(legend.position = c(0.9, 0.8)) # positions the legend in the top right corner of the graph that was blank space anyway
+  
+```
+### 1.2 - Research Question 2
+
+### 1.2 - Research Question 3
+
+### 1.2 - Research Question 4
+
+### 1.3 
+
+
+## **Task 2**
+
+### 2.1 Is my data tidy?
+Tidy data:
+* each row is an observation
+* each column is a variable
+* each cell is a value
+
+To determine if the _vancouver_trees_ dataset is tidy, let's take a
+
+```{r} 
+
+```
+
