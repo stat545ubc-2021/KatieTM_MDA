@@ -5,7 +5,7 @@ author: "Katie Tjaden-McClement"
 output: 
   github_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
 ---
 
 ### Introduction
@@ -38,7 +38,9 @@ trees <- vancouver_trees
 trees <- filter(trees, diameter <= 75)
 ```
 
-### 1.2 - Research Question 1
+### 1.2 Summarizing & Graphing
+
+#### 1.2.1 Root barriers vs. tree size
 
 To summarize the data for question 1, I will compute the range, mean, median, and standard deviation of tree diameter for trees with and without root barriers
 
@@ -54,7 +56,7 @@ q1_summary <- trees %>%
 q1_summary
 ```
 
-Hmmmm we can see from the minimum that there are trees with a diameter of 0, which can't be right. Let's see how many there are and remove them from the dataset
+Hmm we can see from the minimum that there are trees with a diameter of 0, which can't be right. Let's see how many there are and remove them from the dataset
 
 ```{r}
 diameter0 <- filter(trees, diameter == 0)
@@ -91,11 +93,42 @@ ggplot(trees) +
   theme(legend.position = c(0.9, 0.8)) # positions the legend in the top right corner of the graph that was blank space anyway
   
 ```
-### 1.2 - Research Question 2
 
-### 1.2 - Research Question 3
+#### 1.2.2 Tree biomass across neighbourhoods
 
-### 1.2 - Research Question 4
+To look at how tree biomass varies across neighbourhoods, I will find out how many observations (= number of trees, since each row of the data frame is a different tree) there are across the different neighbourhoods. Since I want to measure biomass, which is a combination of tree sizes and number of trees, this will give me an idea of how many trees are in each neighbourhood, but won't get at the total biomass yet.
+
+```{r}
+(trees_neighbourhood <- trees %>% 
+  group_by(neighbourhood_name) %>% 
+  summarise(n = n()))
+
+mean(trees_neighbourhood$n)
+max(trees_neighbourhood$n)
+```
+Of the 22 neighborhoods in this dataset, all have at least 2500 trees, with an average of 6658 trees and a maximum of just over 11 000 trees in Renfrew-Collingwood.
+
+Let's look at the average heights of trees across neighbourhoods, first sorting the neighbourhood name factor from least to most trees to better see any trends in tree height and number of trees in neighbourhood
+
+```{r Tree_height_neighbourhood}
+trees %>% 
+  mutate(neighbourhood_name = fct_rev(fct_infreq(neighbourhood_name))) %>% #reorder the factor by increasing frequency of neighbourhood
+  group_by(neighbourhood_name) %>% 
+  mutate(neighbourhood_count = n()) %>% # add a column to the tibble with tree count for each neighbouhood
+  ggplot(aes(x = neighbourhood_name, y = height_range_id,
+             colour = neighbourhood_count), #
+         alpha = 0.1) +
+  geom_boxplot() +
+  coord_flip() + # flips the x and y axes so that the neighbourhood names fit
+  labs(y = "Tree height range", x = "Neighbourhood name",
+       colour = "# of trees")
+```
+
+There does not seem to be a relationship between number of trees and tree height in a neighbourhood.
+
+#### 1.2.3 Distribution of cherry trees
+
+#### 1.2.4 Tree area vs. size
 
 ### 1.3 
 
