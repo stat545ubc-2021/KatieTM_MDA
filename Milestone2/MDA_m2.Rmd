@@ -17,6 +17,7 @@ In Milestone 1 I chose the _vancouver_trees_ dataset from the _datateachr_ packa
 ```{r setup, include=FALSE} 
 library(datateachr)
 library(tidyverse)
+library(leaflet) # creating interactive maps
 
 theme_set(theme_classic()) #sets theme for all plots as classic, removing backgrounds and gridlines
 ```
@@ -116,7 +117,7 @@ trees %>%
   group_by(neighbourhood_name) %>% 
   mutate(neighbourhood_count = n()) %>% # add a column to the tibble with tree count for each neighbouhood
   ggplot(aes(x = neighbourhood_name, y = height_range_id,
-             colour = neighbourhood_count), #
+             colour = neighbourhood_count), # colour with a continuous scale according to # of trees in the neighbourhood
          alpha = 0.1) +
   geom_boxplot() +
   coord_flip() + # flips the x and y axes so that the neighbourhood names fit
@@ -128,7 +129,47 @@ There does not seem to be a relationship between number of trees and tree height
 
 #### 1.2.3 Distribution of cherry trees
 
+First I need to subset the dataset to just cherry trees based on whether they have "Cherry" in the common name.
+```{r}
+cherry <- trees %>% 
+     filter(grepl("CHERRY", common_name), # the grepl function evaluates whether the string of characters "CHERRY" appears in each common name and returns a TRUE/FALSE that can be filtered by
+            !is.na(longitude)) # removes entries missing longitude (and also latitude) values needed to answer the question of spatial distribution
+
+nrow(cherry)
+```
+There are 15 989 cherry trees in the dataset.
+
+To summarise the cherry tree data I will create a categorical variable based on the latitude and longitude of the trees to determine which quadrant of the city they are in (NW, NE, SW, SE). For this exercise I will set the center of Vancouver as (49.24388553259791, -123.13716749250246).
+
+```{r}
+cherry <- cherry %>% 
+  mutate(quadrant = case_when((latitude > 49.24388553259791 & 
+                               longitude < -123.13716749250246) ~ "NW",
+                              (latitude > 49.24388553259791 & 
+                               longitude > -123.13716749250246) ~ "NE",
+                              (latitude < 49.24388553259791 & 
+                               longitude < -123.13716749250246) ~ "SW",
+                              (latitude < 49.24388553259791 & 
+                               longitude > -123.13716749250246) ~ "SE")) %>% 
+  mutate(quadrant = as.factor(quadrant))
+
+summary(cherry$quadrant)
+```
+
+Now let's map the locations of all the cherry trees in Vancouver using the leaflet package. This creates an interactive map that you can navigate by zooming in and moving around. I've increased the transparency of the points and made them quite small to better show the hotspots of density across the city.
+```{r cherry_map}
+leaflet(cherry) %>% 
+  addProviderTiles(providers$Esri.WorldStreetMap) %>% 
+  addCircleMarkers(lng = cherry$longitude, lat = cherry$latitude,
+                   radius = 0.1, opacity = 0.1) # opacity is the same as alpha transparency
+```
+
+Note: this map is interactive when created in RStudio, but only a static version is available in the markdown document.
+
 #### 1.2.4 Tree area vs. size
+
+
+
 
 ### 1.3 
 
