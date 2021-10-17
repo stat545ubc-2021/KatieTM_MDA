@@ -239,5 +239,28 @@ So, yes - this dataset is tidy!
 
 ### 2.2 Untidying and tidying
 
+Now to demonstrate what untidy data would look like, I'll untidy the _trees_ dataset. I'm going to  make the dataset longer by lumping all street info into a single column with another column for the values of those variables:
+
+```{r}
+trees_untidy <- trees %>%
+  mutate(on_street_block = as.character(on_street_block)) %>% # needs to be a chr vector to combine it with other chr columns in the pivot function
+  pivot_longer(cols = c(std_street, on_street, 
+                        on_street_block, street_side_name),
+              names_to = "street_element",
+              values_to = "street_info")
+glimpse(trees_untidy)
+```
+
+Now let's tidy it back up
+```{r}
+trees_tidy <- trees_untidy %>% 
+  pivot_wider(id_cols = c(-street_element, -street_info),
+               names_from = street_element,
+               values_from = street_info)
+glimpse(trees_tidy)
+```
+
+As we can see from the before and after, the tidy form of the data is much more usable and easier to read and navigate in when viewing the raw dataset.
+
 ### 2.3 Narrowing down research quesitons and prepping data
 
