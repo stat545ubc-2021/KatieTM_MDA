@@ -218,6 +218,7 @@ There doesn't seem to be variation in tree diameter between the different areas 
 
 ### 1.3 
 
+After completing the above summarizing and graphing tasks, I am closer to answering all of the 4 research questions I proposed for the _vancouver_trees_ dataset. Particularly through graphing summary statistics and distributions of my variables of interest, diameter and height, against some categorical variables of interest I've started to get an idea of whether my hypotheses for my research questions will be supported by the data. However, visualizing data to see if there is a difference in tree diameter, for example, between trees with and without barriers is not the same as modelling this relationship. This next step of modeling in milestone 3 will reveal whether the trends (or lack there of) visible in the plots I've created are statistically significant. The only research question that seems to be yeilding any interesting results is questions 1, where trees with root barriers appear to have smaller diameters than those without.
 
 ## **Task 2**
 
@@ -227,9 +228,16 @@ Tidy data:
 * each column is a variable
 * each cell is a value
 
-To determine if the _vancouver_trees_ dataset is tidy, let's take a
+To determine if the _trees_ dataset is tidy, let's have another look at it:
 
 ```{r} 
-
+glimpse(trees)
 ```
+Each row in this dataset corresponds to an individual tree, so the first criteria of having each row be an observation is met. As it relates to my research questions, each column is a variable (although a handful are not relevant to any of my questions) so that condition is met as well. Lastly, each cell in this dataset does represent a value. Another indicator of whether a dataset is tidy or not is whether you could put the column names on the axes of a graph visualizing the data for your research question. This test is met as well, as I used the dataset (mostly) as is to create all the above plots.
+
+So, yes - this dataset is tidy!
+
+### 2.2 Untidying and tidying
+
+### 2.3 Narrowing down research quesitons and prepping data
 
