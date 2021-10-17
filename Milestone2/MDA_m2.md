@@ -267,6 +267,84 @@ version is available in the markdown document.
 
 #### 1.2.4 Tree area vs. size
 
+To investigate whether the area a tree is planted in affects its size, I
+first need to tidy up the plant area column:
+
+``` r
+class(trees$plant_area) # this is currently a character vector
+```
+
+    ## [1] "character"
+
+``` r
+unique(trees$plant_area) # and is a mix of numbers and letters
+```
+
+    ##  [1] "N"  "4"  "B"  "6"  "3"  "5"  "2"  NA   "10" "C"  "7"  "8"  "12" "25" "40"
+    ## [16] "9"  "17" "1"  "24" "11" "20" "13" "15" "16" "G"  "18" "b"  "14" "30" "c" 
+    ## [31] "L"  "P"  "50" "34" "60" "M"  "21" "35" "n"  "75" "45" "19" "0"  "g"  "22"
+    ## [46] "y"  "27" "32" "26"
+
+From the [dataset
+information](opendata.vancouver.ca/explore/dataset/street-trees/information/)
+we know that:
+
+-   B = behind sidewalk
+-   G = in tree grate
+-   N = no sidewalk
+-   C = cutout
+-   a number indicates boulevard width in feet
+
+I will assume that lowercase letters are typos and should be uppercase,
+but I will remove entries with letters for plant area not explained in
+the dataset documentation: y, L, P, M. *Credit for the code to replace
+the numbers in the column with a character goes to TA Yulia Egorova who
+answered this question for another student on Slack.*
+
+``` r
+trees_area <- trees %>% 
+  filter(!is.na(plant_area), # filter out any trees missing plant area information
+         !(plant_area %in% c("y", "P", "L", "M"))) %>% # filter out plant area entries not in documentation
+  mutate(area_factor = gsub("[^0-9.-]", "", plant_area), # replaces characters with blanks
+         area_factor = ifelse(area_factor == "", plant_area,"BL"), # replaces blanks from last step with their original value, and replaces everything else (= the numbers) with "BL" for boulevard
+         area_factor = toupper(area_factor), # make all letters uppercase
+         area_factor = as.factor(area_factor))
+```
+
+Let’s look at the number of observations across our newly wrangled
+categories for the area planted:
+
+``` r
+summary(trees_area$area_factor)
+```
+
+    ##      B     BL      C      G      N 
+    ##   9043 110739   8505   1979  14046
+
+Now let’s plot tree diameter across these categories using boxplots to
+see the means and quantiles of the data as well as adding the jittered
+data points behind with high transparency to show the spread of the data
+and give the viewer a rough, relative idea of the number of observations
+in each category. As for question 1, I made the axis with diameter
+logarithmic to better see the spread of data.
+
+``` r
+ggplot(trees_area, aes(x = area_factor, y = diameter)) + 
+  geom_jitter(width = 0.4, alpha = 0.1, colour = "grey") +
+  geom_boxplot(width = 0.6, alpha = 0.7) +
+  scale_y_log10() + # makes the y axis logarithmic
+  labs(x = "Area tree planted",
+       y = "Tree diameter (inches)") +
+  scale_x_discrete(limits = c("B", "BL", "C", "G", "N"),
+                   labels = c("Behind sidewalk", "Boulevard", 
+                              "Cutout", "Tree grate", "No sidewalk")) # renames the factor codes to something meaningful for a viewer
+```
+
+![](MDA_m2_files/figure-gfm/area_diameter_boxplot-1.png)<!-- -->
+
+There doesn’t seem to be variation in tree diameter between the
+different areas the trees are planted.
+
 ### 1.3
 
 ## **Task 2**
