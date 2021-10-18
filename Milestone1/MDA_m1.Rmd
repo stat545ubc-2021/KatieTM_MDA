@@ -1,5 +1,5 @@
 ---
-title: "Mini data analysis"
+title: "Mini data analysis: Milestone 1"
 date: "October 12, 2021"
 author: "Katie Tjaden-McClement"
 output: 
@@ -10,7 +10,7 @@ output:
 
 ### Introduction
 
-This is the R markdown document for the mini data analysis project. The first milestone of this project for STAT 545 aims to build familiarity with the R tidyverse for data tidying, visualization, and developing research questions. The datasets explored for this analysis come from the _datateachr_ package. Data exploration and visualization will be conducted primarily using packages within the _tidyverse_ and include _dplyr_ functions and _ggplot2_.
+This is the R markdown document for the first milestone of the mini data analysis project. This milestone of this project for STAT 545 aims to build familiarity with the R tidyverse for data tidying, visualization, and developing research questions. The datasets explored for this analysis come from the _datateachr_ package. Data exploration and visualization will be conducted primarily using packages within the _tidyverse_ and include _dplyr_ functions and _ggplot2_.
 
 ```{r setup, include=FALSE} 
 library(datateachr)
@@ -92,7 +92,7 @@ The diameters of trees in this dataset right-skewed, with a very long tail to th
 
 Based on the extremity of the largest outliers in diameter, I am going to trim this dataset to include only trees with diameters less than 75 inches. This only removes 35 of almost 150,000 total trees in the dataset and should avoid any of these outliers having a disproportionate impact in future modelling.
 
-```{r trimming trees}
+```{r trimming_trees}
 trees_trimmed <- filter(trees, diameter <= 75)
 nrow(trees) - nrow(trees_trimmed) # 35 trees trimmed from dataset
 
@@ -155,14 +155,14 @@ This exploratory plot of the relationship between root barriers and log diameter
 Research questions to answer with the _vancouver_trees_ data:
 
 1. How does having a root barrier relate to tree size as measured by diameter and height?
-    - This was my initial question after glimpsing the dataset, and after the exploration above     I think this is an intriguing question to continue to explore.
+    - This was my initial question after glimpsing the dataset, and after the exploration above I think this is an intriguing question to continue to explore.
 
 2. How does tree biomass (measured as a combination of number of trees and their size) vary across neighbourhoods?
-    - In walking around Vancouver, there seem to be some neighbourhoods with many large, old        trees while some other neighbourhoods seem to have only few and/or very small trees. I would     like to see if this observation holds up in the data, and which neighbourhoods have the most     trees.
+    - In walking around Vancouver, there seem to be some neighbourhoods with many large, old trees while some other neighbourhoods seem to have only few and/or very small trees. I would like to see if this observation holds up in the data, and which neighbourhoods have the most trees.
 
 3. What is the spatial distribution of cherry trees in Vancouver?
-    - Since this dataset contains latitude and longitude information for (most of) the trees, I     would love to take advantage of this to dive into some R Spatial work, with the added           benefit of finding out where the highest concentrations of cherry trees are in the city for     prime springtime cherry blossom viewing. 
-    - The following code chunk subsets the trees dataset to just cherry trees (based on having      the word "cherry" in the common name) - there are 40 different species fo cherry trees in       this dataset!
+    - Since this dataset contains latitude and longitude information for (most of) the trees, I     would love to take advantage of this to dive into some R Spatial work, with the added benefit of finding out where the highest concentrations of cherry trees are in the city for prime springtime cherry blossom viewing. 
+    - The following code chunk subsets the trees dataset to just cherry trees (based on having the word "cherry" in the common name) - there are 40 different species fo cherry trees in this dataset!
     
 
    ```{r}
@@ -173,7 +173,7 @@ Research questions to answer with the _vancouver_trees_ data:
    ```
 
 4. What is the relationship between plant_area (whether the tree is in a sidewalk cutout, gate, behind sidewalk, or in boulevards or varying widths) and tree size as measured by diameter and height?
-    - I am interested in knowing whether trees in grates or cutouts, for example, tend to be        smaller than those on boulevards, and within trees on boulevards if they tend to increase      in size with increasing boulevard width. In a dressing this question it would also be           interesting to explore whether certain plant_area categories are more likely to have root       barriers in place, relating back to question 1.
+    - I am interested in knowing whether trees in grates or cutouts, for example, tend to be        smaller than those on boulevards, and within trees on boulevards if they tend to increase in size with increasing boulevard width. In a dressing this question it would also be interesting to explore whether certain plant_area categories are more likely to have root barriers in place, relating back to question 1.
 
 
 

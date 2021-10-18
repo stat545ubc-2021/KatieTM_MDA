@@ -1,4 +1,4 @@
-Mini data analysis
+Mini data analysis: Milestone 1
 ================
 Katie Tjaden-McClement
 October 12, 2021
@@ -24,13 +24,13 @@ October 12, 2021
 
 ### Introduction
 
-This is the R markdown document for the mini data analysis project. The
-first milestone of this project for STAT 545 aims to build familiarity
-with the R tidyverse for data tidying, visualization, and developing
-research questions. The datasets explored for this analysis come from
-the *datateachr* package. Data exploration and visualization will be
-conducted primarily using packages within the *tidyverse* and include
-*dplyr* functions and *ggplot2*.
+This is the R markdown document for the first milestone of the mini data
+analysis project. This milestone of this project for STAT 545 aims to
+build familiarity with the R tidyverse for data tidying, visualization,
+and developing research questions. The datasets explored for this
+analysis come from the *datateachr* package. Data exploration and
+visualization will be conducted primarily using packages within the
+*tidyverse* and include *dplyr* functions and *ggplot2*.
 
 ## **Task 1**
 
@@ -228,7 +228,7 @@ in a dataset:
 gg_miss_var(trees)
 ```
 
-![](MDA_files/figure-gfm/missing_values-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/missing_values-1.png)<!-- -->
 
 The trees dataset isn’t missing any data for the variables of interest I
 initially identified: root\_barrier, diameter, and height\_range\_id,
@@ -249,7 +249,7 @@ ggplot(trees, aes(x = diameter)) +
   geom_density() 
 ```
 
-![](MDA_files/figure-gfm/diameter_density-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/diameter_density-1.png)<!-- -->
 
 The diameters of trees in this dataset right-skewed, with a very long
 tail to the right as visible in the above density plot. Many models will
@@ -274,7 +274,7 @@ ggplot(trees_trimmed, aes(x = diameter)) +
   geom_density() # reduces severity of right-skew
 ```
 
-![](MDA_files/figure-gfm/trimming%20trees-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/trimming_trees-1.png)<!-- -->
 
 ``` r
 trees <- trees_trimmed # saving as "trees" again to shorten object name going forward
@@ -287,7 +287,7 @@ ggplot(trees, aes(x = height_range_id)) +
   geom_histogram(bins = 25)
 ```
 
-![](MDA_files/figure-gfm/height_histogram-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/height_histogram-1.png)<!-- -->
 
 Height is also right-skewed, though to a lesser extent than diameter.
 Because the hieght data is already binned into 10 height range
@@ -312,7 +312,7 @@ ggplot(trees, aes(log_diameter)) +
   geom_histogram(bins = 45)
 ```
 
-![](MDA_files/figure-gfm/log_diameter_histogram-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/log_diameter_histogram-1.png)<!-- -->
 
 The distribution of log\_diameter is no longer right skewed, but the
 variable is still not normally distributed, with a massive peak at
@@ -323,7 +323,7 @@ ggplot(trees, aes(log_height)) +
   geom_histogram(bins = 45)
 ```
 
-![](MDA_files/figure-gfm/log_height_histogram-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/log_height_histogram-1.png)<!-- -->
 
 The distribution of log\_hieght is still right-skewed, so
 log-transforming height\_range\_id was not effective in creating a more
@@ -356,7 +356,7 @@ ggplot(trees, aes(x = log_diameter)) +
   geom_density(aes(fill = root_barrier), alpha = 0.5)
 ```
 
-![](MDA_files/figure-gfm/barrier_diameter_density-1.png)<!-- -->
+![](MDA_m1_files/figure-gfm/barrier_diameter_density-1.png)<!-- -->
 
 This exploratory plot of the relationship between root barriers and log
 diameter shows that trees without root barriers tend to have a longer
