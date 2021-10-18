@@ -595,3 +595,9 @@ glimpse(trees_m3)
     ## $ date_planted        <date> 1999-01-13, 1996-05-31, 1993-11-22, 1996-04-29, 1…
     ## $ log_diameter        <dbl> 2.302585, 2.302585, 1.386294, 2.890372, 2.197225, …
     ## $ neighbourhood_count <int> 6345, 6345, 11033, 11033, 11033, 6345, 11033, 1103…
+
+Note: Most portions of the above code chunk were originally performed
+earlier in this document to prep the data for summarizing and graphing
+tasks for research questions 1 and 2. I’ve included them again here to
+demonstrate the full transformation of the dataset from its raw form to
+the tidy version relevant to my final research questions.

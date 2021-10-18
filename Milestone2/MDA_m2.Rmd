@@ -295,7 +295,7 @@ trees_m3 <- vancouver_trees %>%
 
 glimpse(trees_m3)
 ```
-
+Note: Most portions of the above code chunk were originally performed earlier in this document to prep the data for summarizing and graphing tasks for research questions 1 and 2. I've included them again here to demonstrate the full transformation of the dataset from its raw form to the tidy version relevant to my final research questions.
 
 
 
