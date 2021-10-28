@@ -140,74 +140,51 @@ The _tidy_ function from the broom package converts a model output into a tibble
 tidy(root_barrier_ttest)
 ```
 
-
-
 # Exercise 3: Reading and writing data
 
 Get set up for this exercise by making a folder called `output` in the top level of your project folder / repository. You'll be saving things there. 
 
-## 3.1 (5 points)
+First let's make sure the _here_ function is correctly identifying my project location:
+```{r}
+here::here() # yes, this is correct!
+```
+
+Now let's create an "Output" folder:
+```{r}
+dir.create(here::here("Output"))
+```
+
+### 3.1
 
 Take a summary table that you made from Milestone 2 (Exercise 1.2), and write it as a csv file in your `output` folder. Use the `here::here()` function.
 
-- **Robustness criteria**: You should be able to move your Mini Project repository / project folder to some other location on your computer, or move this very Rmd file to another location within your project repository / folder, and your code should still work.
-- **Reproducibility criteria**: You should be able to delete the csv file, and remake it simply by knitting this Rmd file. 
-  
-<!-------------------------- Start your work below ---------------------------->
+Table of summary statistics for trees with and without root barriers from milestone 2:
+```{r}
+q1_summary <- trees %>% 
+  group_by(root_barrier) %>% 
+  summarise(mean = mean(diameter, na.rm = T),
+            range_lower = min(diameter),
+            range_upper = max(diameter),
+            median = median(diameter, na.rm = T),
+            sd = sd(diameter),
+            n = n())
+q1_summary
+```
+Write as csv file in the Output folder:
+```{r}
+write_csv(q1_summary, here::here("Output", "q1_summary.csv"))
+```
 
-
-<!----------------------------------------------------------------------------->
-
-## 3.2 (5 points)
+### 3.2 (5 points)
 
 Write your model object from Exercise 2 to an R binary file (an RDS), and load it again. Be sure to save the binary file in your `output` folder. Use the functions `saveRDS()` and `readRDS()`. 
 
-- The same robustness and reproducibility criteria as in 3.1 apply here.
+Write to RDS file in the output folder:
+```{r}
+saveRDS(root_barrier_ttest, here::here("Output", "root_barrier_ttest.RDS"))
+```
 
-<!-------------------------- Start your work below ---------------------------->
-
-
-<!----------------------------------------------------------------------------->
-
-# Tidy Repository
-
-Now that this is your last milestone, your entire project repository should be organized. Here are the criteria we're looking for.
-
-## Main README (3 points)
-
-There should be a file named `README.md` at the top level of your repository. Its contents should automatically appear when you visit the repository on GitHub. 
-
-Minimum contents of the README file:
-
-- In a sentence or two, explains what this repository is, so that future-you or someone else stumbling on your repository can be oriented to the repository.
-- In a sentence or two (or more??), briefly explains how to engage with the repository. You can assume the person reading knows the material from STAT 545A. Basically, if a visitor to your repository wants to explore your project, what should they know?
-
-Once you get in the habit of making README files, and seeing more README files in other projects, you'll wonder how you ever got by without them! They are tremendously helpful.
-
-## File and Folder structure (3 points)
-
-You should have at least four folders in the top level of your repository: one for each milestone, and one output folder. If there are any other folders, these are explained in the main README.
-
-Each milestone document is contained in its respective folder, and nowhere else. 
-
-Every level-1 folder (that is, the ones stored in the top level, like "Milestone1" and "output") has a `README` file, explaining in a sentence or two what is in the folder, in plain language (it's enough to say something like "This folder contains the source for Milestone 1").
-
-## Output (2 points)
-
-All output is recent and relevant: 
-
-- All Rmd files have been `knit`ted to their output, and all data files saved from Exercise 3 above appear in the `output` folder. 
-- All of these output files are up-to-date -- that is, they haven't fallen behind after the source (Rmd) files have been updated.
-- There should be no relic output files. For example, if you were knitting an Rmd to html, but then changed the output to be only a markdown file, then the html file is a relic and should be deleted. 
-
-Our recommendation: delete all output files, and re-knit each milestone's Rmd file, so that everything is up to date and relevant. 
-
-PS: there's a way where you can run all project code using a single command, instead of clicking "knit" three times. More on this in STAT 545B!
-
-## Error-free code (1 point)
-
-This Milestone 3 document knits error-free. (We've already graded this aspect for Milestone 1 and 2)
-
-## Tagged release (1 point)
-
-You've tagged a release for Milestone 3. (We've already graded this aspect for Milestone 1 and 2)
+Load back in:
+```{r}
+readRDS(here::here("Output", "root_barrier_ttest.RDS"))
+```
