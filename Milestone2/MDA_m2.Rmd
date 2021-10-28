@@ -1,0 +1,302 @@
+---
+title: "Mini Data Analysis: Milestone 2"
+date: "October 19, 2021"
+author: "Katie Tjaden-McClement"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 4
+---
+
+### Introduction
+
+This is the R markdown document for milestone 2 of the mini data analysis project for STAT 545A. This milestone of the project builds on the work done in the first milestone (_MDA_m1.Rmd_) to gain experience working with _dplyr_ and _tidyr_ to handle datasets and address research questions. This milestone focuses on exploring datasets for the purpose of addressing a research question and the principle of tidy data and how datasets can be converted to tidy formats for a given research question.
+
+In Milestone 1 I chose the _vancouver_trees_ dataset from the _datateachr_ package to work with for the Mini Data Analysis, and explored it through various visualizations.
+
+```{r setup, include=FALSE} 
+library(datateachr)
+library(tidyverse)
+library(leaflet) # creating interactive maps
+
+theme_set(theme_classic()) #sets theme for all plots as classic, removing backgrounds and gridlines
+```
+
+## **Task 1**
+
+### 1.1 Research Questions
+
+These are the 4 research questions I proposed for the _vancouver_trees_ dataset in milestone 1:
+
+1. How does having a root barrier relate to tree size as measured by diameter and height?
+2. How does tree biomass (measured as a combination of number of trees and their size) vary across neighbourhoods?
+3. What is the spatial distribution of cherry trees in Vancouver?
+4. What is the relationship between plant_area (whether the tree is in a sidewalk cutout, gate, behind sidewalk, or in boulevards or varying widths) and tree size as measured by diameter and height?
+
+Before getting into processing and summarizing my data, I will load it into my R environment using the more concise name "trees". I will also trim outliers for diameter as discuessed in milestone 1.
+```{r} 
+trees <- vancouver_trees
+trees <- filter(trees, diameter <= 75)
+```
+
+### 1.2 Summarizing & Graphing
+
+#### 1.2.1 Root barriers vs. tree size
+
+To summarize the data for question 1, I will compute the range, mean, median, and standard deviation of tree diameter for trees with and without root barriers
+
+```{r}
+q1_summary <- trees %>% 
+  group_by(root_barrier) %>% 
+  summarise(mean = mean(diameter, na.rm = T),
+            range_lower = min(diameter),
+            range_upper = max(diameter),
+            median = median(diameter, na.rm = T),
+            sd = sd(diameter),
+            n = n())
+q1_summary
+```
+
+Hmm we can see from the minimum that there are trees with a diameter of 0, which can't be right. Let's see how many there are and remove them from the dataset
+
+```{r}
+diameter0 <- filter(trees, diameter == 0)
+nrow(diameter0) # there are 92!
+
+trees <- filter(trees, diameter != 0)
+```
+
+Now lets repeat the summary statistics:
+```{r}
+q1_summary <- trees %>% 
+  group_by(root_barrier) %>% 
+  summarise(mean = mean(diameter, na.rm = T),
+            range_lower = min(diameter),
+            range_upper = max(diameter),
+            median = median(diameter, na.rm = T),
+            sd = sd(diameter),
+            n = n())
+q1_summary
+```
+Let's visualize these differences in diameter between trees with and without root barriers using a boxplot overlayed with density plots to get a better sense of the full spread of the data
+
+```{r diameter_barrier_boxplot_density}
+ggplot(trees) +
+  geom_density(aes(x = diameter, fill = root_barrier), 
+              alpha = 0.4) +
+  geom_boxplot(aes(x = diameter, y = root_barrier, fill = root_barrier), 
+               width = 0.5, alpha = 0.9) +
+  scale_x_log10() + # changes the x axis to a logarithmic scale which more clearly shows the distribution
+  scale_fill_brewer(palette = "Set1") + # specifies a colour palette from the rcolourbrewer package (in tidyverse)
+  labs(x = "Tree diameter",
+       fill = "Root barrier",
+       y = "") + # removes y axis label because it is redundant to fill label
+  theme(legend.position = c(0.9, 0.8)) # positions the legend in the top right corner of the graph that was blank space anyway
+  
+```
+
+#### 1.2.2 Tree biomass across neighbourhoods
+
+To look at how tree biomass varies across neighbourhoods, I will find out how many observations (= number of trees, since each row of the data frame is a different tree) there are across the different neighbourhoods. Since I want to measure biomass, which is a combination of tree sizes and number of trees, this will give me an idea of how many trees are in each neighbourhood, but won't get at the total biomass yet.
+
+```{r}
+trees_neighbourhood <- trees %>% 
+  group_by(neighbourhood_name) %>% 
+  summarise(n = n())
+print(trees_neighbourhood, n = 22) # prints all rows of tibble for markdown doc
+
+mean(trees_neighbourhood$n)
+max(trees_neighbourhood$n)
+```
+Of the 22 neighborhoods in this dataset, all have at least 2500 trees, with an average of 6658 trees and a maximum of just over 11 000 trees in Renfrew-Collingwood.
+
+Let's look at the average heights of trees across neighbourhoods, first sorting the neighbourhood name factor from least to most trees to better see any trends in tree height and number of trees in neighbourhood
+
+```{r Tree_height_neighbourhood}
+trees %>% 
+  mutate(neighbourhood_name = fct_rev(fct_infreq(neighbourhood_name))) %>% #reorder the factor by increasing frequency of neighbourhood
+  group_by(neighbourhood_name) %>% 
+  mutate(neighbourhood_count = n()) %>% # add a column to the tibble with tree count for each neighbouhood
+  ggplot(aes(x = neighbourhood_name, y = height_range_id,
+             colour = neighbourhood_count), # colour with a continuous scale according to # of trees in the neighbourhood
+         alpha = 0.1) +
+  geom_boxplot() +
+  coord_flip() + # flips the x and y axes so that the neighbourhood names fit
+  labs(y = "Tree height range", x = "Neighbourhood name",
+       colour = "# of trees")
+```
+
+There does not seem to be a relationship between number of trees and tree height in a neighbourhood.
+
+#### 1.2.3 Distribution of cherry trees
+
+First I need to subset the dataset to just cherry trees based on whether they have "Cherry" in the common name.
+```{r}
+cherry <- trees %>% 
+     filter(grepl("CHERRY", common_name), # the grepl function evaluates whether the string of characters "CHERRY" appears in each common name and returns a TRUE/FALSE that can be filtered by
+            !is.na(longitude)) # removes entries missing longitude (and also latitude) values needed to answer the question of spatial distribution
+
+nrow(cherry)
+```
+There are 15 989 cherry trees in the dataset.
+
+To summarise the cherry tree data I will create a categorical variable based on the latitude and longitude of the trees to determine which quadrant of the city they are in (NW, NE, SW, SE). For this exercise I will set the center of Vancouver as (49.24388553259791, -123.13716749250246).
+
+```{r}
+cherry <- cherry %>% 
+  mutate(quadrant = case_when((latitude > 49.24388553259791 & 
+                               longitude < -123.13716749250246) ~ "NW",
+                              (latitude > 49.24388553259791 & 
+                               longitude > -123.13716749250246) ~ "NE",
+                              (latitude < 49.24388553259791 & 
+                               longitude < -123.13716749250246) ~ "SW",
+                              (latitude < 49.24388553259791 & 
+                               longitude > -123.13716749250246) ~ "SE")) %>% 
+  mutate(quadrant = as.factor(quadrant))
+
+summary(cherry$quadrant)
+```
+
+Now let's map the locations of all the cherry trees in Vancouver using the leaflet package. This creates an interactive map that you can navigate by zooming in and moving around. I've increased the transparency of the points and made them quite small to better show the hotspots of density across the city.
+```{r cherry_map}
+leaflet(cherry) %>% 
+  addProviderTiles(providers$Esri.WorldStreetMap) %>% 
+  addCircleMarkers(lng = cherry$longitude, lat = cherry$latitude,
+                   radius = 0.1, opacity = 0.1) # opacity is the same as alpha transparency
+```
+
+Note: this map is interactive when created in RStudio, but only a static version is available in the markdown document.
+
+#### 1.2.4 Tree area vs. size
+
+To investigate whether the area a tree is planted in affects its size, I first need to tidy up the plant area column:
+```{r}
+class(trees$plant_area) # this is currently a character vector
+unique(trees$plant_area) # and is a mix of numbers and letters
+```
+
+From the [dataset information](opendata.vancouver.ca/explore/dataset/street-trees/information/) we know that:
+
+* B = behind sidewalk
+* G = in tree grate
+* N = no sidewalk
+* C = cutout
+* a number indicates boulevard width in feet
+
+I will assume that lowercase letters are typos and should be uppercase, but I will remove entries with letters for plant area not explained in the dataset documentation: y, L, P, M. 
+_Credit for the code to replace the numbers in the column with a character goes to TA Yulia Egorova who answered this question for another student on Slack._
+
+```{r}
+trees_area <- trees %>% 
+  filter(!is.na(plant_area), # filter out any trees missing plant area information
+         !(plant_area %in% c("y", "P", "L", "M"))) %>% # filter out plant area entries not in documentation
+  mutate(area_factor = gsub("[^0-9.-]", "", plant_area), # replaces characters with blanks
+         area_factor = ifelse(area_factor == "", plant_area,"BL"), # replaces blanks from last step with their original value, and replaces everything else (= the numbers) with "BL" for boulevard
+         area_factor = toupper(area_factor), # make all letters uppercase
+         area_factor = as.factor(area_factor))
+```
+
+Let's look at the number of observations across our newly wrangled categories for the area planted:
+
+```{r}
+summary(trees_area$area_factor)
+```
+
+Now let's plot tree diameter across these categories using boxplots to see the means and quantiles of the data as well as adding the jittered data points behind with high transparency to show the spread of the data and give the viewer a rough, relative idea of the number of observations in each category. As for question 1, I made the axis with diameter logarithmic to better see the spread of data.
+```{r area_diameter_boxplot}
+ggplot(trees_area, aes(x = area_factor, y = diameter)) + 
+  geom_jitter(width = 0.4, alpha = 0.1, colour = "grey") +
+  geom_boxplot(width = 0.6, alpha = 0.7) +
+  scale_y_log10() + # makes the y axis logarithmic
+  labs(x = "Area tree planted",
+       y = "Tree diameter (inches)") +
+  scale_x_discrete(limits = c("B", "BL", "C", "G", "N"),
+                   labels = c("Behind sidewalk", "Boulevard", 
+                              "Cutout", "Tree grate", "No sidewalk")) # renames the factor codes to something meaningful for a viewer
+```
+
+There doesn't seem to be variation in tree diameter between the different areas the trees are planted.
+
+### 1.3 Progress on research questions
+
+After completing the above summarizing and graphing tasks, I am closer to answering all of the 4 research questions I proposed for the _vancouver_trees_ dataset. Particularly through graphing summary statistics and distributions of my variables of interest, diameter and height, against some categorical variables of interest I've started to get an idea of whether my hypotheses for my research questions will be supported by the data. However, visualizing data to see if there is a difference in tree diameter, for example, between trees with and without barriers is not the same as modelling this relationship. This next step of modeling in milestone 3 will reveal whether the trends (or lack there of) visible in the plots I've created are statistically significant. The only research question that seems to be yeilding any interesting results is questions 1, where trees with root barriers appear to have smaller diameters than those without.
+
+## **Task 2**
+
+### 2.1 Is my data tidy?
+Tidy data:
+
+* each row is an observation
+* each column is a variable
+* each cell is a value
+
+To determine if the _trees_ dataset is tidy, let's have another look at it:
+
+```{r} 
+glimpse(trees)
+```
+Each row in this dataset corresponds to an individual tree, so the first criteria of having each row be an observation is met. As it relates to my research questions, each column is a variable (although a handful are not relevant to any of my questions) so that condition is met as well. Lastly, each cell in this dataset does represent a value. Another indicator of whether a dataset is tidy or not is whether you could put the column names on the axes of a graph visualizing the data for your research question. This test is met as well, as I used the dataset (mostly) as is to create all the above plots.
+
+So, yes - this dataset is tidy!
+
+### 2.2 Untidying and tidying
+
+Now to demonstrate what untidy data would look like, I'll untidy the _trees_ dataset. I'm going to  make the dataset longer by lumping all street info into a single column with another column for the values of those variables:
+
+```{r}
+trees_untidy <- trees %>%
+  mutate(on_street_block = as.character(on_street_block)) %>% # needs to be a chr vector to combine it with other chr columns in the pivot function
+  pivot_longer(cols = c(std_street, on_street, 
+                        on_street_block, street_side_name),
+              names_to = "street_element",
+              values_to = "street_info")
+glimpse(trees_untidy)
+```
+
+Now let's tidy it back up
+```{r}
+trees_tidy <- trees_untidy %>% 
+  pivot_wider(id_cols = c(-street_element, -street_info),
+               names_from = street_element,
+               values_from = street_info)
+glimpse(trees_tidy)
+```
+
+As we can see from the before and after, the tidy form of the data is much more usable and easier to read and navigate in when viewing the raw dataset.
+
+### 2.3 Narrowing down research questions and prepping data
+
+Now that I have explored the _trees_ data further and gotten an idea of which of my research questions seem to be giving interesting results, I'm narrowing down tot he following 2 research questions to continue with of Milestone 3:
+
+1. How does having a root barrier relate to tree size as measured by diameter and height?
+   - This question is the only one that seems to have a difference in a response variable (diameter) across my proposed predictor variable (root barrier). I also haven't had a chance to explore the relationship between height and root barriers yet, which I would like to do.
+   
+2. How does tree biomass (measured as a combination of number of trees and their size) vary across neighbourhoods?
+   - While my graphing exersise for this questions seemed to suggest that there is no difference in tree height across neightbourhoods, there is a difference in number of trees per neighbourhood, which still likely leads to differences in overall tree biomass between neighbourhoods. I am also interested in adding tree age to this question, both to get a chance to practice working with date type data and to see which neighbourhoods have the oldest and youngest trees, on average which i think could yeild interesting results. I will revise this question to the following:
+   - **How does tree age and tree biomass vary across Vancouver neighbourhoods?**
+
+Given these 2 questions, I'll create a version of the _trees_ dataset for Milestone 3 that is tidy and only keeps the relevant information:
+
+```{r}
+glimpse(vancouver_trees) #starting with the raw vancouver_trees dataset because I've made some changes to the trees version I've been working with throughout this milestone
+
+trees_m3 <- vancouver_trees %>% 
+  select(tree_id, genus_name, species_name, common_name, # keeping tree species info in case I want to look at species specific size differences or neighbourhood distributions
+         root_barrier, neighbourhood_name, height_range_id,
+         diameter, date_planted) %>% # keep only columns that might be relevant
+  filter(diameter != 0 & diameter <= 75) %>% # remove outliers and incorrect values for diameter 
+  mutate(log_diameter = log(diameter), # create column that's log of diameter for modelling (has more normal distribution, see milestone 1)
+         neighbourhood_name = fct_rev(fct_infreq(neighbourhood_name))) %>% #reorder the factor by increasing frequency of neighbourhood
+  group_by(neighbourhood_name) %>% 
+  mutate(neighbourhood_count = n()) %>% # add column for neighbourhood count
+  ungroup()
+
+# I will also likely drop columns missing data for date planted for question 2, but will keep that data in for now as those observations can still be used when answering question 1
+
+glimpse(trees_m3)
+```
+Note: Most portions of the above code chunk were originally performed earlier in this document to prep the data for summarizing and graphing tasks for research questions 1 and 2. I've included them again here to demonstrate the full transformation of the dataset from its raw form to the tidy version relevant to my final research questions.
+
+
+
+
